@@ -16,6 +16,7 @@ import com.mystic.booking.exception.ResourceNotFoundException;
 import com.mystic.booking.repository.ReservationRepository;
 import com.mystic.booking.repository.ReservationReviewRepository;
 import com.mystic.booking.repository.RoomRepository;
+import com.mystic.booking.repository.UserRepository;
 import com.mystic.booking.repository.TopUsedRoomProjection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,8 @@ class ReservationQueryServiceTest {
     RoomRepository roomRepository;
     @Mock
     ReservationReviewRepository reservationReviewRepository;
+    @Mock
+    UserRepository userRepository;
 
     @InjectMocks
     ReservationQueryService queryService;
@@ -139,6 +142,27 @@ class ReservationQueryServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).roomName()).isEqualTo("會議室 A");
         assertThat(result.get(0).totalReservedMinutes()).isEqualTo(300L);
+    }
+
+    @Test
+    @DisplayName("findByUser:使用者存在 → 回傳其預約(可依 status 篩選)")
+    void findByUser_returnsReservations_whenUserExists() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+        when(reservationRepository.findByUserIdWithDetails(1L, ReservationStatus.APPROVED))
+                .thenReturn(List.of(reservation(ReservationStatus.APPROVED)));
+
+        List<ReservationResponse> result = queryService.findByUser(1L, ReservationStatus.APPROVED);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("findByUser:使用者不存在 → 404")
+    void findByUser_throwsNotFound_whenUserMissing() {
+        when(userRepository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> queryService.findByUser(99L, null))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test

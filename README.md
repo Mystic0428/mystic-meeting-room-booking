@@ -312,13 +312,13 @@ ALTER TABLE reservations
 ## 8. 如何執行測試
 
 ```bash
-./mvnw test       # 45 個測試(unit + repository + controller + 整合/併發),需 Docker(Testcontainers)
+./mvnw test       # 46 個測試(unit + repository + controller + 整合/併發),需 Docker(Testcontainers)
 ./mvnw verify     # 額外強制 Service 層 line 覆蓋率 ≥ 70%(JaCoCo check)
 ```
 
-覆蓋率報告:`target/site/jacoco/index.html`(Service 層 line 覆蓋率 96%)。
+覆蓋率報告:`target/site/jacoco/index.html`(Service 層 line 覆蓋率 95%)。
 
-### 測試類型(共 45 個)
+### 測試類型(共 46 個)
 
 | 類型 | 類別 | 技術 | 驗什麼 |
 |---|---|---|---|
@@ -341,7 +341,7 @@ ALTER TABLE reservations
 - 全域例外處理(400 / 403 / 404 / 409 / 500)+ 統一 `ApiError`
 - Bean Validation(`@RequestBody` 與 `@RequestParam` 兩種)
 - Flyway 管理 schema(V1–V8)+ 種子資料(5 使用者 / 5 會議室 / 12 預約)
-- 測試:unit / repository(Testcontainers)/ controller / 整合 / 併發;JaCoCo Service 層 96%,並以 `check` 強制 ≥ 70%
+- 測試:unit / repository(Testcontainers)/ controller / 整合 / 併發;JaCoCo Service 層 95%,並以 `check` 強制 ≥ 70%
 - Docker Compose 一鍵啟動(app + db)
 - **Spring Security + JWT 身分驗證(加分)**:登入簽發 token、stateless 驗證、角色授權(REVIEWER/ADMIN 才能審核),操作者身分取自 token
 - **Swagger / OpenAPI 文件(加分)**:springdoc 自動掃描 controller 產生,Swagger UI 於 `/swagger-ui.html`,含 Bearer「Authorize」可直接測試受保護 API

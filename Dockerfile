@@ -1,0 +1,21 @@
+  # ========== 第一階段:build(用含 JDK 的 image 把原始碼編成 jar) ==========                                                                                                                                  
+  FROM eclipse-temurin:21-jdk AS build                                                                                                                                                                        
+  WORKDIR /app                                                                                                                                                                                                
+                                                                                                                                                                                                              
+  # 先只複製 wrapper 與 pom,單獨抓依賴 → 這層會被 Docker 快取:                                                                                                                                                
+  # 只要 pom.xml 沒變,之後改 code 重 build 都不會重新下載依賴                                                                                                                                                 
+  COPY .mvn/ .mvn/                                                                                                                                                                                            
+  COPY mvnw pom.xml ./                                                                                                                                                                                        
+  RUN chmod +x mvnw && ./mvnw -B dependency:go-offline                                                                                                                                                        
+                                                                                                                                                                                                              
+  # 再複製原始碼,打包成 jar                                                                                                                                                                                   
+  # -DskipTests:測試用 Testcontainers 要 Docker,不能在 image build 裡面跑                                                                                                                                     
+  COPY src ./src                                                                                                                                                                                              
+  RUN ./mvnw -B clean package -DskipTests                                                                                                                                                                     
+                                                                                                                                                                                                              
+  # ========== 第二階段:runtime(只放 JRE + jar,image 更小更安全) ==========                                                                                                                                   
+  FROM eclipse-temurin:21-jre AS runtime                                                                                                                                                                      
+  WORKDIR /app                                                                                                                                                                                                
+  COPY --from=build /app/target/*.jar app.jar                                                                                                                                                                 
+  EXPOSE 8080                                                                                                                                                                                                 
+  ENTRYPOINT ["java", "-jar", "app.jar"]    

@@ -1,0 +1,25 @@
+### 把下面的 roomId / userId 換成你查到的實際 id(99999 那條故意不換)
+
+### 1. 成功 → 預期 201
+POST http://localhost:8080/api/reservations
+Content-Type: application/json
+
+{"roomId":1,"userId":1,"startTime":"2026-07-01T10:00:00","endTime":"2026-07-01T11:00:00","subject":"Test Meeting","purpose":"demo","attendeeCount":5}
+
+### 2. 衝突 → 預期 409(跟上面一模一樣再送一次)
+POST http://localhost:8080/api/reservations
+Content-Type: application/json
+
+{"roomId":1,"userId":1,"startTime":"2026-07-01T10:00:00","endTime":"2026-07-01T11:00:00","subject":"Test Meeting","purpose":"demo","attendeeCount":5}
+
+### 3. 查無會議室 → 預期 404
+POST http://localhost:8080/api/reservations
+Content-Type: application/json
+
+{"roomId":99999,"userId":1,"startTime":"2026-07-01T14:00:00","endTime":"2026-07-01T15:00:00","subject":"x","attendeeCount":2}
+
+### 4. 格式錯(缺 subject、attendeeCount=0)→ 預期 400
+POST http://localhost:8080/api/reservations
+Content-Type: application/json
+
+{"roomId":1,"userId":1,"startTime":"2026-07-01T16:00:00","endTime":"2026-07-01T17:00:00","attendeeCount":0}

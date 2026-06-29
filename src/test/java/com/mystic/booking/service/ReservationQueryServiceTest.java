@@ -6,12 +6,15 @@ import com.mystic.booking.dto.ReservationSearchCriteria;
 import com.mystic.booking.dto.TimelineResponse;
 import com.mystic.booking.dto.TopUsedRoomResponse;
 import com.mystic.booking.entity.ReservationEntity;
+import com.mystic.booking.entity.ReservationReviewEntity;
 import com.mystic.booking.entity.RoomEntity;
 import com.mystic.booking.entity.UserEntity;
 import com.mystic.booking.enums.ReservationStatus;
+import com.mystic.booking.enums.ReviewAction;
 import com.mystic.booking.enums.Role;
 import com.mystic.booking.exception.ResourceNotFoundException;
 import com.mystic.booking.repository.ReservationRepository;
+import com.mystic.booking.repository.ReservationReviewRepository;
 import com.mystic.booking.repository.RoomRepository;
 import com.mystic.booking.repository.TopUsedRoomProjection;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +49,8 @@ class ReservationQueryServiceTest {
     ReservationRepository reservationRepository;
     @Mock
     RoomRepository roomRepository;
+    @Mock
+    ReservationReviewRepository reservationReviewRepository;
 
     @InjectMocks
     ReservationQueryService queryService;
@@ -134,6 +139,21 @@ class ReservationQueryServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).roomName()).isEqualTo("會議室 A");
         assertThat(result.get(0).totalReservedMinutes()).isEqualTo(300L);
+    }
+
+    @Test
+    @DisplayName("exportReservationsCsv:輸出表頭 + 每筆預約一列(含最新審核者)")
+    void exportReservationsCsv_buildsCsv() {
+        ReservationEntity res = reservation(ReservationStatus.APPROVED);   // id=100, 會議室 A, 小明/IT
+        ReservationReviewEntity review = new ReservationReviewEntity(res, user(), ReviewAction.APPROVED, "ok");
+        when(reservationRepository.findByMonthWithDetails(any(), any())).thenReturn(List.of(res));
+        when(reservationReviewRepository.findByReservationIdInWithReviewer(any())).thenReturn(List.of(review));
+
+        String csv = queryService.exportReservationsCsv(2099, 1);
+
+        assertThat(csv).contains("預約編號,會議室,預約人,部門,開始時間,結束時間,狀態,審核者,審核時間");
+        assertThat(csv).contains("會議室 A").contains("approved").contains("小明");
+        assertThat(csv.strip().split("\n")).hasSize(2);   // 表頭 + 1 筆
     }
 
     // ---- helpers ----

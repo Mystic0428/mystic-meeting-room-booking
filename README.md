@@ -402,7 +402,7 @@ ALTER TABLE reservations
 - 測試:unit / repository(Testcontainers)/ controller / 整合 / 併發;JaCoCo Service 層 95%,並以 `check` 強制 ≥ 70%
 - Docker Compose 一鍵啟動(app + db)
 - **Spring Security + JWT 身分驗證(加分)**:登入簽發 token、stateless 驗證、角色授權(REVIEWER/ADMIN 才能審核),操作者身分取自 token
-- **Swagger / OpenAPI 文件(加分)**:springdoc 自動掃描 controller 產生,Swagger UI 於 `/swagger-ui.html`,含 Bearer「Authorize」可直接測試受保護 API
+- **Swagger / OpenAPI 文件(加分)**:springdoc 自動掃描 controller 產生,Swagger UI 於 `/swagger-ui.html`,各端點以 `@Tag` 分組、`@Operation` 加上說明,含 Bearer「Authorize」可直接測試受保護 API
 - **CI(GitHub Actions,加分)**:push / PR 自動跑 `./mvnw verify`(測試 + 覆蓋率門檻),並上傳 JaCoCo 報告
 - **匯出報表 CSV(加分)**:`GET /api/reservations/export`,含審核者/審核時間,加 UTF-8 BOM 讓 Excel 正確顯示中文
 

@@ -8,6 +8,8 @@ import com.mystic.booking.dto.TopUsedRoomResponse;
 import com.mystic.booking.enums.ReservationStatus;
 import com.mystic.booking.exception.InvalidReservationException;
 import com.mystic.booking.service.ReservationQueryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
+@Tag(name = "預約查詢 Query", description = "預約總覽、依條件查詢、每日/每月統計與報表匯出")
 @RestController
 @RequiredArgsConstructor
 @Validated   // 啟用方法參數(@RequestParam / @PathVariable)的 Bean Validation
@@ -34,7 +37,8 @@ public class ReservationQueryController {
 
     private final ReservationQueryService reservationQueryService;
 
-    // 預約總覽:多條件篩選 + 分頁 + 排序(page / size / sort 由 Pageable 自動綁)
+    @Operation(summary = "預約總覽",
+            description = "多條件篩選(dateFrom/dateTo/roomId/roomName/username/status)+ 分頁排序(page/size/sort)。")
     @GetMapping("/api/reservations")
     public Page<ReservationResponse> overview(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
@@ -49,24 +53,27 @@ public class ReservationQueryController {
         return reservationQueryService.overview(criteria, pageable);
     }
 
+    @Operation(summary = "依會議室查所有預約", description = "依 startTime 排序;會議室不存在回 404")
     @GetMapping("/api/rooms/{roomId}/reservations")
     public List<ReservationResponse> findByRoom(@PathVariable Long roomId) {
         return reservationQueryService.findByRoom(roomId);
     }
 
-    // 查某使用者的所有預約(可選 status 篩選)
+    @Operation(summary = "依使用者查所有預約", description = "可選 status 篩選,依 startTime 排序;使用者不存在回 404")
     @GetMapping("/api/users/{userId}/reservations")
     public List<ReservationResponse> findByUser(@PathVariable Long userId,
                                                 @RequestParam(required = false) String status) {
         return reservationQueryService.findByUser(userId, parseStatus(status));
     }
 
+    @Operation(summary = "每日時段表", description = "某天各啟用中會議室的 approved 預約;沒預約的房回空清單")
     @GetMapping("/api/reservations/timeline")
     public TimelineResponse timeline(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return reservationQueryService.timeline(date);
     }
 
+    @Operation(summary = "每月狀態統計", description = "某月各狀態數量(GROUP BY)+ 當月明細")
     @GetMapping("/api/reservations/monthly-summary")
     public MonthlySummaryResponse monthlySummary(
             @RequestParam @Positive int year,
@@ -74,6 +81,7 @@ public class ReservationQueryController {
         return reservationQueryService.monthlySummary(year, month);
     }
 
+    @Operation(summary = "使用率最高前三會議室", description = "僅計 approved,依總預約分鐘數排序")
     @GetMapping("/api/rooms/top-used")
     public List<TopUsedRoomResponse> topUsedRooms(
             @RequestParam @Positive int year,
@@ -81,7 +89,8 @@ public class ReservationQueryController {
         return reservationQueryService.topUsedRooms(year, month);
     }
 
-    // 匯出某月預約為 CSV(加分項);回 text/csv + 附件下載
+    @Operation(summary = "匯出某月預約 CSV(加分項)",
+            description = "回 text/csv 附件下載,含審核者/審核時間;加 UTF-8 BOM 讓 Excel 正確顯示中文")
     @GetMapping("/api/reservations/export")
     public ResponseEntity<String> export(
             @RequestParam @Positive int year,

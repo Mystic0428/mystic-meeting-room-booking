@@ -126,6 +126,62 @@ Schema 由 Flyway migration 管理(`src/main/resources/db/migration`,V1–V8),`d
 | `reservations` | 預約主檔 | `id` | `room_id → rooms`、`user_id → users` | — | `CHECK (start_time < end_time)`、`CHECK (attendee_count > 0)`、exclusion constraint(見第 6.3 節) |
 | `reservation_reviews` | 審核 / 退回申請的稽核紀錄(每次審核一筆) | `id` | `reservation_id → reservations`、`reviewer_id → users` | — | — |
 
+### 完整欄位
+
+**`users`**
+
+| 欄位 | 型別 | 約束 / 說明 |
+|---|---|---|
+| `id` | BIGINT | PK,identity |
+| `username` | VARCHAR(50) | NOT NULL |
+| `email` | VARCHAR(100) | NOT NULL,UNIQUE |
+| `department` | VARCHAR(50) | |
+| `role` | VARCHAR(50) | NOT NULL,enum STRING(USER / REVIEWER / ADMIN)|
+| `password_hash` | VARCHAR(100) | 可為 null;BCrypt 雜湊(JWT 加分,V9)|
+| `created_at` / `updated_at` | TIMESTAMP | JPA Auditing 自動填 |
+
+**`rooms`**
+
+| 欄位 | 型別 | 約束 / 說明 |
+|---|---|---|
+| `id` | BIGINT | PK,identity |
+| `name` | VARCHAR(100) | NOT NULL,UNIQUE |
+| `capacity` | INTEGER | NOT NULL,CHECK (capacity > 0) |
+| `floor` | VARCHAR(50) | |
+| `location` | VARCHAR(100) | |
+| `is_active` | BOOLEAN | NOT NULL,DEFAULT TRUE(軟刪除標記)|
+| `created_at` / `updated_at` | TIMESTAMP | JPA Auditing |
+
+**`reservations`**
+
+| 欄位 | 型別 | 約束 / 說明 |
+|---|---|---|
+| `id` | BIGINT | PK,identity |
+| `room_id` | BIGINT | NOT NULL,FK → `rooms(id)` |
+| `user_id` | BIGINT | NOT NULL,FK → `users(id)` |
+| `start_time` | TIMESTAMP | NOT NULL |
+| `end_time` | TIMESTAMP | NOT NULL |
+| `subject` | VARCHAR(200) | NOT NULL |
+| `purpose` | VARCHAR(500) | |
+| `attendee_count` | INTEGER | NOT NULL,CHECK (attendee_count > 0) |
+| `status` | VARCHAR(30) | NOT NULL,enum STRING |
+| `cancel_reason` | VARCHAR(500) | 可為 null(V7)|
+| `created_at` / `updated_at` | TIMESTAMP | JPA Auditing |
+
+> 表級約束:`CHECK (start_time < end_time)`、exclusion constraint `no_overlapping_reservation`(V4,見第 6.3 節)。
+
+**`reservation_reviews`**
+
+| 欄位 | 型別 | 約束 / 說明 |
+|---|---|---|
+| `id` | BIGINT | PK,identity |
+| `reservation_id` | BIGINT | NOT NULL,FK → `reservations(id)` |
+| `reviewer_id` | BIGINT | NOT NULL,FK → `users(id)` |
+| `action` | VARCHAR(20) | NOT NULL,enum STRING(APPROVED / REJECTED)|
+| `comment` | VARCHAR(500) | |
+| `reviewed_at` | TIMESTAMP | 審核時間 |
+| `created_at` / `updated_at` | TIMESTAMP | JPA Auditing |
+
 ### Entity 關聯(對應題目 ORM 要求)
 
 ```

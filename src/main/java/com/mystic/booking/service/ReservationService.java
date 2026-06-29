@@ -97,12 +97,12 @@ public class ReservationService {
      * @throws ForbiddenException        申請者不是預約本人(→ 403)
      */
     @Transactional
-    public ReservationResponse requestCancellation(Long reservationId, CancelRequestRequest request) {
+    public ReservationResponse requestCancellation(Long reservationId, Long currentUserId, CancelRequestRequest request) {
         ReservationEntity reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + reservationId));
 
-        // 授權:只有預約本人可以申請退回(getUser().getId() 讀 FK,不觸發 lazy load)
-        if (!reservation.getUser().getId().equals(request.userId())) {
+        // 授權:只有預約本人可以申請退回(currentUserId 來自 JWT;getUser().getId() 讀 FK,不觸發 lazy load)
+        if (!reservation.getUser().getId().equals(currentUserId)) {
             throw new ForbiddenException("only the owner can request cancellation");
         }
 
@@ -119,13 +119,13 @@ public class ReservationService {
      * @throws IllegalStateTransitionException 預約不在可審核狀態(→ 409)
      */
     @Transactional
-    public ReservationResponse review(Long reservationId, ReviewRequest request) {
+    public ReservationResponse review(Long reservationId, Long reviewerId, ReviewRequest request) {
         ReservationEntity reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + reservationId));
-        UserEntity reviewer = userRepository.findById(request.reviewerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Reviewer not found: " + request.reviewerId()));
+        UserEntity reviewer = userRepository.findById(reviewerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reviewer not found: " + reviewerId));
 
-        // 授權:只有 REVIEWER / ADMIN 可以審核
+        // 授權:只有 REVIEWER / ADMIN 可以審核(reviewerId 來自 JWT;Security 端點層亦已把關,此處為縱深防禦)
         if (!isReviewer(reviewer)) {
             throw new ForbiddenException("only REVIEWER or ADMIN can review");
         }

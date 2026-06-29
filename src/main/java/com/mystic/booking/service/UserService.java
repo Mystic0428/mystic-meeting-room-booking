@@ -7,6 +7,7 @@ import com.mystic.booking.exception.DuplicateResourceException;
 import com.mystic.booking.exception.ResourceNotFoundException;
 import com.mystic.booking.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserResponse create(UserRequest request) {
@@ -26,6 +28,10 @@ public class UserService {
         }
         UserEntity user = new UserEntity(
                 request.username(), request.email(), request.department(), request.role());
+        // 有給密碼就雜湊後存(entity 只收已編碼字串,不碰明文)
+        if (request.password() != null && !request.password().isBlank()) {
+            user.changePassword(passwordEncoder.encode(request.password()));
+        }
         return UserResponse.from(userRepository.save(user));
     }
 

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -31,6 +32,8 @@ class UserServiceTest {
 
     @Mock
     UserRepository userRepository;
+    @Mock
+    PasswordEncoder passwordEncoder;
 
     @InjectMocks
     UserService userService;
@@ -42,7 +45,7 @@ class UserServiceTest {
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         UserResponse response = userService.create(
-                new UserRequest("小明", "a@example.com", "IT", Role.USER));
+                new UserRequest("小明", "a@example.com", "IT", Role.USER, null));
 
         assertThat(response.username()).isEqualTo("小明");
         assertThat(response.role()).isEqualTo("USER");
@@ -55,7 +58,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail("a@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.create(
-                new UserRequest("小明", "a@example.com", "IT", Role.USER)))
+                new UserRequest("小明", "a@example.com", "IT", Role.USER, null)))
                 .isInstanceOf(DuplicateResourceException.class);
         verify(userRepository, never()).save(any());
     }

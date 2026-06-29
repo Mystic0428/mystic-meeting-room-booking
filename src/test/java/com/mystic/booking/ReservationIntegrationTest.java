@@ -58,6 +58,7 @@ class ReservationIntegrationTest {
                 1L, 1L, start, start.plusHours(1), "IT-create", "p", 5);
 
         mockMvc.perform(post("/api/reservations")
+                        .header("Authorization", bearerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated());
@@ -72,10 +73,13 @@ class ReservationIntegrationTest {
         CreateReservationRequest req = new CreateReservationRequest(
                 1L, 1L, start, start.plusHours(1), "IT-conflict", "p", 5);
         String body = objectMapper.writeValueAsString(req);
+        String token = bearerToken();
 
-        mockMvc.perform(post("/api/reservations").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/reservations").header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated());
-        mockMvc.perform(post("/api/reservations").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/reservations").header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
 
         assertThat(reservationRepository.countByRoomAndStart(1L, start)).isEqualTo(1);   // 還是只有一筆
@@ -121,5 +125,29 @@ class ReservationIntegrationTest {
         assertThat(success.get()).isEqualTo(1);                                   // 只成功一筆
         assertThat(conflict.get()).isEqualTo(1);                                  // 另一筆被擋
         assertThat(reservationRepository.countByRoomAndStart(1L, start)).isEqualTo(1);  // DB 真的只有一筆
+    }
+
+    @Test
+    @DisplayName("未帶 JWT 建立預約 → 401")
+    void createReservation_withoutToken_returns401() throws Exception {
+        CreateReservationRequest req = new CreateReservationRequest(
+                1L, 1L,
+                LocalDateTime.of(2099, 6, 1, 10, 0), LocalDateTime.of(2099, 6, 1, 11, 0),
+                "no-auth", "p", 5);
+
+        mockMvc.perform(post("/api/reservations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /** 用種子使用者登入取得 "Bearer &lt;jwt&gt;"(seed 密碼 = password123,見 V9)。 */
+    private String bearerToken() throws Exception {
+        String json = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"wang@example.com\",\"password\":\"password123\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return "Bearer " + objectMapper.readTree(json).get("token").asText();
     }
 }

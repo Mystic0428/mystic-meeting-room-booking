@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,13 +31,15 @@ public class ReservationController {
 
     @PostMapping("/{id}/cancel-request")
     public ReservationResponse cancelRequest(@PathVariable Long id,
+                                             @AuthenticationPrincipal Long currentUserId,
                                              @Valid @RequestBody CancelRequestRequest request) {
-        return reservationService.requestCancellation(id, request);
+        return reservationService.requestCancellation(id, currentUserId, request);
     }
 
     @PostMapping("/{id}/review")
     public ReservationResponse review(@PathVariable Long id,
+                                      @AuthenticationPrincipal Long reviewerId,
                                       @Valid @RequestBody ReviewRequest request) {
-        return reservationService.review(id, request);
+        return reservationService.review(id, reviewerId, request);
     }
 }

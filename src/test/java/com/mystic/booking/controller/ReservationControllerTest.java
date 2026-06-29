@@ -3,10 +3,12 @@ package com.mystic.booking.controller;
 import com.mystic.booking.dto.ReservationResponse;
 import com.mystic.booking.exception.ReservationConflictException;
 import com.mystic.booking.exception.ResourceNotFoundException;
+import com.mystic.booking.security.JwtService;
 import com.mystic.booking.service.ReservationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 不碰 DB,跑很快。@RestControllerAdvice 會一起載入,所以例外 → 狀態碼的對應也一併驗到。
  */
 @WebMvcTest(ReservationController.class)
+@AutoConfigureMockMvc(addFilters = false)   // 跳過 security filter:本測試聚焦 controller 邏輯,授權另在整合測試驗
 @DisplayName("ReservationController(@WebMvcTest)測試")
 class ReservationControllerTest {
 
@@ -35,6 +38,10 @@ class ReservationControllerTest {
 
     @MockitoBean
     ReservationService reservationService;
+
+    // filter 已用 addFilters=false 關掉;此 mock 只為滿足 JwtAuthenticationFilter 的建構依賴,讓 context 能載入
+    @MockitoBean
+    JwtService jwtService;
 
     private static final String VALID_BODY = """
             {"roomId":1,"userId":1,"startTime":"2099-01-01T10:00:00","endTime":"2099-01-01T11:00:00","subject":"Test","purpose":"p","attendeeCount":5}

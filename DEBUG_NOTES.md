@@ -74,3 +74,4 @@ EAGER 會在**每次**載入該 entity 時無條件抓所有關聯 → 製造 N+
 | 建立預約回 500 看不出原因 | 多行貼上把 JSON body 弄壞 | 改單行 / `test.http`;**5xx 要看 server log 不是 response** |
 | `@SpringBootTest` 報 `jpaAuditingHandler` 重複定義 | auditing bean 在測試 context 被註冊兩次 | 把 `allow-bean-definition-overriding` 只放在**測試** `application.properties`,正式環境保留保護 |
 | Maven「Nothing to compile」改了沒生效 | 增量編譯沿用舊產物 | `./mvnw clean test` 強制重編 |
+| JWT 角色不足應回 403 卻回 **401** | `accessDeniedHandler` 用 `sendError()` 會觸發 **error dispatch** 重進 filter chain;`JwtAuthenticationFilter` 是 `OncePerRequestFilter` 不會在 error dispatch 重跑 → `/error` 變匿名 → 誤判 401 | handler 改用 `response.setStatus()`(不觸發 error dispatch)。開 `org.springframework.security=DEBUG` 看到 log 出現 `Securing POST /error` + `anonymous` 才定位到 |

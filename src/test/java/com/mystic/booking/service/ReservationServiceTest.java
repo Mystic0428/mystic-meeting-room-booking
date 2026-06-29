@@ -178,7 +178,7 @@ class ReservationServiceTest {
         when(reservationRepository.findById(100L)).thenReturn(Optional.of(res));
 
         ReservationResponse response =
-                reservationService.requestCancellation(100L, new CancelRequestRequest(1L, "會議取消"));
+                reservationService.requestCancellation(100L, 1L, new CancelRequestRequest("會議取消"));
 
         assertThat(response.status()).isEqualTo("cancel_requested");
     }
@@ -190,7 +190,7 @@ class ReservationServiceTest {
         when(reservationRepository.findById(100L)).thenReturn(Optional.of(res));
 
         assertThatThrownBy(() ->
-                reservationService.requestCancellation(100L, new CancelRequestRequest(2L, "x")))
+                reservationService.requestCancellation(100L, 2L, new CancelRequestRequest("x")))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -204,7 +204,7 @@ class ReservationServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(user(2L, Role.ADMIN)));
 
         ReservationResponse response =
-                reservationService.review(100L, new ReviewRequest(2L, ReviewAction.APPROVED, "核准"));
+                reservationService.review(100L, 2L, new ReviewRequest(ReviewAction.APPROVED, "核准"));
 
         assertThat(response.status()).isEqualTo("approved");
         verify(reservationReviewRepository).save(any());
@@ -218,7 +218,7 @@ class ReservationServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(user(2L, Role.REVIEWER)));
 
         ReservationResponse response =
-                reservationService.review(100L, new ReviewRequest(2L, ReviewAction.APPROVED, "同意退回"));
+                reservationService.review(100L, 2L, new ReviewRequest(ReviewAction.APPROVED, "同意退回"));
 
         assertThat(response.status()).isEqualTo("cancelled");
     }
@@ -231,7 +231,7 @@ class ReservationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user(1L, Role.USER)));
 
         assertThatThrownBy(() ->
-                reservationService.review(100L, new ReviewRequest(1L, ReviewAction.APPROVED, "x")))
+                reservationService.review(100L, 1L, new ReviewRequest(ReviewAction.APPROVED, "x")))
                 .isInstanceOf(ForbiddenException.class);
         verify(reservationReviewRepository, never()).save(any());
     }
@@ -244,7 +244,7 @@ class ReservationServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(user(2L, Role.REVIEWER)));
 
         assertThatThrownBy(() ->
-                reservationService.review(100L, new ReviewRequest(2L, ReviewAction.APPROVED, "x")))
+                reservationService.review(100L, 2L, new ReviewRequest(ReviewAction.APPROVED, "x")))
                 .isInstanceOf(IllegalStateTransitionException.class);
     }
 

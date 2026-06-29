@@ -9,10 +9,12 @@ import com.mystic.booking.dto.TimelineResponse.RoomTimeline;
 import com.mystic.booking.dto.TimelineResponse.TimelineReservation;
 import com.mystic.booking.dto.TopUsedRoomResponse;
 import com.mystic.booking.entity.ReservationEntity;
+import com.mystic.booking.entity.ReservationReviewEntity;
 import com.mystic.booking.entity.RoomEntity;
 import com.mystic.booking.enums.ReservationStatus;
 import com.mystic.booking.exception.ResourceNotFoundException;
 import com.mystic.booking.repository.ReservationRepository;
+import com.mystic.booking.repository.ReservationReviewRepository;
 import com.mystic.booking.repository.RoomRepository;
 import com.mystic.booking.spec.ReservationSpecifications;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +40,7 @@ public class ReservationQueryService {
 
     private final ReservationRepository reservationRepository;
     private final RoomRepository roomRepository;
+    private final ReservationReviewRepository reservationReviewRepository;
 
     @Transactional(readOnly = true)
     public Page<ReservationResponse> overview(ReservationSearchCriteria criteria, Pageable pageable) {
@@ -122,6 +126,52 @@ public class ReservationQueryService {
         return reservationRepository.findTopUsedRooms(monthStart, monthEnd).stream()
                 .map(TopUsedRoomResponse::from)
                 .toList();
+    }
+
+    /**
+     * 匯出某月預約為 CSV(加分項)。含審核者 / 審核時間(取每筆預約最新一筆審核)。
+     * 開頭加 UTF-8 BOM,讓 Excel 開啟能正確顯示中文。
+     */
+    @Transactional(readOnly = true)
+    public String exportReservationsCsv(int year, int month) {
+        LocalDateTime monthStart = LocalDate.of(year, month, 1).atStartOfDay();
+        LocalDateTime monthEnd = monthStart.plusMonths(1);
+
+        List<ReservationEntity> reservations = reservationRepository.findByMonthWithDetails(monthStart, monthEnd);
+
+        // 每筆預約的「最新一筆審核」,一次撈出避免 N+1
+        Map<Long, ReservationReviewEntity> latestReview = reservations.isEmpty()
+                ? Map.of()
+                : reservationReviewRepository.findByReservationIdInWithReviewer(
+                        reservations.stream().map(ReservationEntity::getId).toList()).stream()
+                    .collect(Collectors.toMap(
+                            rv -> rv.getReservation().getId(),
+                            rv -> rv,
+                            (a, b) -> a.getReviewedAt().isAfter(b.getReviewedAt()) ? a : b));
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        StringBuilder sb = new StringBuilder("﻿");   // UTF-8 BOM
+        sb.append("預約編號,會議室,預約人,部門,開始時間,結束時間,狀態,審核者,審核時間\n");
+        for (ReservationEntity r : reservations) {
+            ReservationReviewEntity rv = latestReview.get(r.getId());
+            sb.append(String.join(",",
+                            csv(String.valueOf(r.getId())),
+                            csv(r.getRoom().getName()),
+                            csv(r.getUser().getUsername()),
+                            csv(r.getUser().getDepartment()),
+                            csv(r.getStartTime().format(fmt)),
+                            csv(r.getEndTime().format(fmt)),
+                            csv(r.getStatus().name().toLowerCase()),
+                            csv(rv != null ? rv.getReviewer().getUsername() : ""),
+                            csv(rv != null && rv.getReviewedAt() != null ? rv.getReviewedAt().format(fmt) : "")))
+                    .append("\n");
+        }
+        return sb.toString();
+    }
+
+    /** CSV 欄位:加雙引號並跳脫內部雙引號,避免逗號 / 換行破壞格式。 */
+    private static String csv(String value) {
+        return "\"" + (value == null ? "" : value.replace("\"", "\"\"")) + "\"";
     }
 
     private TimelineReservation toTimelineReservation(ReservationEntity r) {

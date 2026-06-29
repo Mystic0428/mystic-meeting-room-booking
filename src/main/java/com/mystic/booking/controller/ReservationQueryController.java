@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +72,19 @@ public class ReservationQueryController {
             @RequestParam @Positive int year,
             @RequestParam @Min(1) @Max(12) int month) {
         return reservationQueryService.topUsedRooms(year, month);
+    }
+
+    // 匯出某月預約為 CSV(加分項);回 text/csv + 附件下載
+    @GetMapping("/api/reservations/export")
+    public ResponseEntity<String> export(
+            @RequestParam @Positive int year,
+            @RequestParam @Min(1) @Max(12) int month) {
+        String csv = reservationQueryService.exportReservationsCsv(year, month);
+        String filename = String.format("reservations-%d-%02d.csv", year, month);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
     }
 
     /** 把 query 字串 status(可小寫)轉成 enum;非法值丟 400。 */

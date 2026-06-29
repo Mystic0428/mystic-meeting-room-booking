@@ -29,6 +29,8 @@ curl -s -X POST localhost:8080/api/auth/login -H 'Content-Type: application/json
 curl localhost:8080/api/rooms -H "Authorization: Bearer <貼上 token>"
 ```
 
+- **互動式 API 文件(Swagger UI)**:`http://localhost:8080/swagger-ui.html`(右上「Authorize」貼上 token 即可在 UI 測試)。
+
 ### 方式 B:本機開發(只用容器跑 DB,app 跑在本機)
 
 ```bash
@@ -342,12 +344,12 @@ ALTER TABLE reservations
 - 測試:unit / repository(Testcontainers)/ controller / 整合 / 併發;JaCoCo Service 層 96%,並以 `check` 強制 ≥ 70%
 - Docker Compose 一鍵啟動(app + db)
 - **Spring Security + JWT 身分驗證(加分)**:登入簽發 token、stateless 驗證、角色授權(REVIEWER/ADMIN 才能審核),操作者身分取自 token
+- **Swagger / OpenAPI 文件(加分)**:springdoc 自動掃描 controller 產生,Swagger UI 於 `/swagger-ui.html`,含 Bearer「Authorize」可直接測試受保護 API
 
 ### 未完成 / 未實作(多為題目加分項)
 
 - 公司開放時間 08:00–20:00 限制(Validation 加分)
 - 單次預約時長上下限(最短 30 分 / 最長 4 小時)(Validation 加分)
-- Swagger / OpenAPI 文件(加分)
 - 稽核 log 與報表匯出(加分情境)
 - CI(GitHub Actions)(加分)
 

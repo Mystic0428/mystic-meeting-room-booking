@@ -35,7 +35,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)                    // 純 token、無 cookie session,不需 CSRF
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()      // 登入放行
+                        // 登入 + Swagger 放行
+                        .requestMatchers("/api/auth/**",
+                                "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // 審核只允許 REVIEWER / ADMIN(角色來自 token)
                         .requestMatchers(HttpMethod.POST, "/api/reservations/*/review").hasAnyRole("REVIEWER", "ADMIN")
                         .anyRequest().authenticated())

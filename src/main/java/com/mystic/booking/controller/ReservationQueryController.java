@@ -54,6 +54,13 @@ public class ReservationQueryController {
         return reservationQueryService.findByRoom(roomId);
     }
 
+    // 查某使用者的所有預約(可選 status 篩選)
+    @GetMapping("/api/users/{userId}/reservations")
+    public List<ReservationResponse> findByUser(@PathVariable Long userId,
+                                                @RequestParam(required = false) String status) {
+        return reservationQueryService.findByUser(userId, parseStatus(status));
+    }
+
     @GetMapping("/api/reservations/timeline")
     public TimelineResponse timeline(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {

@@ -16,6 +16,7 @@ import com.mystic.booking.exception.ResourceNotFoundException;
 import com.mystic.booking.repository.ReservationRepository;
 import com.mystic.booking.repository.ReservationReviewRepository;
 import com.mystic.booking.repository.RoomRepository;
+import com.mystic.booking.repository.UserRepository;
 import com.mystic.booking.spec.ReservationSpecifications;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,6 +42,7 @@ public class ReservationQueryService {
     private final ReservationRepository reservationRepository;
     private final RoomRepository roomRepository;
     private final ReservationReviewRepository reservationReviewRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public Page<ReservationResponse> overview(ReservationSearchCriteria criteria, Pageable pageable) {
@@ -55,6 +57,16 @@ public class ReservationQueryService {
             throw new ResourceNotFoundException("Room not found: " + roomId);
         }
         return reservationRepository.findByRoomIdWithDetails(roomId).stream()
+                .map(ReservationResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationResponse> findByUser(Long userId, ReservationStatus status) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found: " + userId);
+        }
+        return reservationRepository.findByUserIdWithDetails(userId, status).stream()
                 .map(ReservationResponse::from)
                 .toList();
     }

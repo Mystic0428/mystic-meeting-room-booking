@@ -44,6 +44,18 @@ public interface ReservationRepository extends JpaRepository<ReservationEntity, 
            """)
     List<ReservationEntity> findByRoomIdWithDetails(@Param("roomId") Long roomId);
 
+    // 查某使用者的所有預約(status 為 null 時不篩);JOIN FETCH room+user,依 startTime 排序
+    @Query("""
+           SELECT r FROM ReservationEntity r
+           JOIN FETCH r.room
+           JOIN FETCH r.user
+           WHERE r.user.id = :userId
+             AND (:status IS NULL OR r.status = :status)
+           ORDER BY r.startTime
+           """)
+    List<ReservationEntity> findByUserIdWithDetails(@Param("userId") Long userId,
+                                                    @Param("status") ReservationStatus status);
+
     // timeline 用:某天的指定狀態預約,JOIN FETCH user(取 username),依 startTime 排序
     @Query("""
            SELECT r FROM ReservationEntity r

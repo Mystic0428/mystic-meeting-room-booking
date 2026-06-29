@@ -17,6 +17,9 @@ public record UserRequest(
         String department,
 
         @NotNull(message = "role is required")
-        Role role
+        Role role,
+
+        // 選填:設定後該使用者即可用 email + 此密碼登入(JWT 加分項)
+        String password
 ) {
 }

@@ -18,3 +18,8 @@ spring:
         format_sql: true
         default_batch_fetch_size: 100
     open-in-view: false
+
+# JWT 設定(加分項)。正式環境應改由環境變數注入 secret,勿寫死在版控。
+jwt:
+  secret: ${JWT_SECRET:change-this-secret-to-a-long-random-value-at-least-32-bytes}
+  expiration-minutes: 60

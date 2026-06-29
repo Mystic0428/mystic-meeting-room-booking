@@ -538,8 +538,7 @@ WHERE r.room.id = :roomId
 
 本專案開發過程使用 AI 輔助工具(Claude / Claude Code),方式如下:
 
-- **設計討論與需求釐清**:由本人**先提出架構與設計方向**,再以問答方式逐步討論可優化之處(如題目模糊的 `cancel_requested` 是否佔用、審核流程雙用途、併發控制選型、index 設計);**最終設計決策由本人判斷拍板**。
-- **概念學習**:用於理解 PostgreSQL exclusion constraint、JPA 關聯與 N+1、`@Transactional` 與 rollback、Docker 多階段建置等觀念。
-- **樣板協助**:部分 entity / DTO / 測試樣板與 README 草稿由 AI 協助產生,本人逐一檢視、調整並理解。
-- **發現並修正 AI 的錯誤**:AI 一度將「processing 是否佔用時段」誤判為題目未定義的釐清點;本人對照題目 PDF 後確認題目已明訂 `processing` / `approved` 視為佔用(規則 10),予以更正,並重新釐清真正未定義的是 `cancel_requested`。
-- **本人對所有提交的程式、資料表設計、交易邏輯、測試策略與系統限制皆能說明,並可於面試現場追問與修改。**
+- **設計討論與需求釐清**:由本人**先提出架構與設計方向**,再以問答方式逐步討論可優化之處(如題目模糊的 `cancel_requested` 是否佔用、審核流程雙用途、併發控制選型、index 設計);**最終設計決策與實作由我執行拍板**。
+- **概念學習**:用於理解或複習 PostgreSQL exclusion constraint、JPA 關聯與 N+1、`@Transactional` 與 rollback、Docker 多階段建置等觀念。
+- **樣板協助**:部分 entity / DTO / 測試樣板與 README 草稿由 AI 協助產生,本人逐一檢視、調整。
+- **發現並修正 AI 的錯誤**:AI 一度將「processing 是否佔用時段」誤判為題目未定義的釐清點;我對照題目 PDF 後確認題目已明訂 `processing` / `approved` 視為佔用(規則 10),予以更正,並重新釐清真正未定義的是 `cancel_requested`。

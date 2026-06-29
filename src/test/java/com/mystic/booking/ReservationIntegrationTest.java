@@ -141,7 +141,7 @@ class ReservationIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    /** 用種子使用者登入取得 "Bearer &lt;jwt&gt;"(seed 密碼 = password123,見 V9)。 */
+    /** 用範例使用者登入取得 "Bearer &lt;jwt&gt;"(密碼 = password123,見 V9)。 */
     private String bearerToken() throws Exception {
         String json = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

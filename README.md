@@ -17,7 +17,7 @@ docker compose up --build
 會自動 build app image、起 PostgreSQL、等它 healthy 後再起 app。看到 `Started MysticMeetingRoomBookingApplication` 即成功。
 
 - API 入口:`http://localhost:8080`
-- **所有 API(除 `/api/auth/login`)皆需 JWT**。種子使用者密碼一律 `password123`:
+- **所有 API(除 `/api/auth/login`)皆需 JWT**。範例使用者密碼一律 `password123`:
 
 ```bash
 # 1) 登入取得 token
@@ -25,7 +25,7 @@ curl -s -X POST localhost:8080/api/auth/login -H 'Content-Type: application/json
   -d '{"email":"wang@example.com","password":"password123"}'
 # → {"token":"eyJ...","tokenType":"Bearer","userId":1,"role":"USER"}
 
-# 2) 帶 token 呼叫(回傳 5 間種子會議室)
+# 2) 帶 token 呼叫(回傳 5 間範例會議室)
 curl localhost:8080/api/rooms -H "Authorization: Bearer <貼上 token>"
 ```
 
@@ -58,7 +58,7 @@ docker compose up -d --build    # 重 build 並背景啟動
 docker compose logs -f app      # 追 app 的 log
 docker compose ps               # 看容器狀態
 docker compose down             # 停止並移除容器(DB 資料保留在 volume)
-docker compose down -v          # 連 volume 一起刪 → DB 資料清空(下次重跑會重建 + 重灌種子)
+docker compose down -v          # 連 volume 一起刪 → DB 資料清空(下次重跑會重建 + 重灌初始資料)
 ```
 
 > `-d` 控制前景/背景,`--build` 控制是否重新 build image——兩者獨立,可合併使用。
@@ -397,7 +397,7 @@ ALTER TABLE reservations
 - 五支查詢 API(總覽分頁/篩選/排序、依會議室、每日時段、每月統計、使用率前三)
 - 全域例外處理(400 / 403 / 404 / 409 / 500)+ 統一 `ApiError`
 - Bean Validation(`@RequestBody` 與 `@RequestParam` 兩種)
-- Flyway 管理 schema(V1–V8)+ 種子資料(5 使用者 / 5 會議室 / 12 預約)
+- Flyway 管理 schema(V1–V9)+ 初始資料(5 使用者 / 5 會議室 / 12 預約)
 - 測試:unit / repository(Testcontainers)/ controller / 整合 / 併發;JaCoCo Service 層 95%,並以 `check` 強制 ≥ 70%
 - Docker Compose 一鍵啟動(app + db)
 - **Spring Security + JWT 身分驗證(加分)**:登入簽發 token、stateless 驗證、角色授權(REVIEWER/ADMIN 才能審核),操作者身分取自 token

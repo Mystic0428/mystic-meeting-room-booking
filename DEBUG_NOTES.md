@@ -70,7 +70,7 @@ EAGER 會在**每次**載入該 entity 時無條件抓所有關聯 → 製造 N+
 | 問題 | 原因 | 解法 |
 |---|---|---|
 | `created_at` / `updated_at` 為 null | 缺 `@EnableJpaAuditing`,auditing 未啟用 | 啟用(抽到 `JpaAuditingConfig`);注意 auditing 只在經 JPA 儲存時觸發,raw SQL 不會 |
-| V6 種子觸發 exclusion constraint 衝突 | DB volume 沒清,新種子疊在殘留資料上 | `docker compose down -v` 後重跑;種子假設乾淨 DB |
+| V6 初始資料觸發 exclusion constraint 衝突 | DB volume 沒清,新資料疊在殘留資料上 | `docker compose down -v` 後重跑;初始資料假設乾淨 DB |
 | 建立預約回 500 看不出原因 | 多行貼上把 JSON body 弄壞 | 改單行 / `test.http`;**5xx 要看 server log 不是 response** |
 | `@SpringBootTest` 報 `jpaAuditingHandler` 重複定義 | auditing bean 在測試 context 被註冊兩次 | 把 `allow-bean-definition-overriding` 只放在**測試** `application.properties`,正式環境保留保護 |
 | Maven「Nothing to compile」改了沒生效 | 增量編譯沿用舊產物 | `./mvnw clean test` 強制重編 |

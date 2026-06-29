@@ -345,21 +345,21 @@ ALTER TABLE reservations
 - Docker Compose 一鍵啟動(app + db)
 - **Spring Security + JWT 身分驗證(加分)**:登入簽發 token、stateless 驗證、角色授權(REVIEWER/ADMIN 才能審核),操作者身分取自 token
 - **Swagger / OpenAPI 文件(加分)**:springdoc 自動掃描 controller 產生,Swagger UI 於 `/swagger-ui.html`,含 Bearer「Authorize」可直接測試受保護 API
+- **CI(GitHub Actions,加分)**:push / PR 自動跑 `./mvnw verify`(測試 + 覆蓋率門檻),並上傳 JaCoCo 報告
 
 ### 未完成 / 未實作(多為題目加分項)
 
 - 公司開放時間 08:00–20:00 限制(Validation 加分)
 - 單次預約時長上下限(最短 30 分 / 最長 4 小時)(Validation 加分)
 - 稽核 log 與報表匯出(加分情境)
-- CI(GitHub Actions)(加分)
 
 ## 10. 可以改善的地方
 
-- **授權強化**:改由 JWT / `SecurityContext` 取得當前使用者,移除「信任 request body 的 id」(見第 12 節 ③)。
-- **API 文件自動化**:導入 OpenAPI / Swagger,讓第 3 節清單由註解自動產生。
 - **大資料量擴展**:依第 6.3 / 第 7 節規劃導入月份分區、讀寫分流;依 `EXPLAIN ANALYZE` 結果微調複合 / partial index。
 - **併發體驗**:對被擋下的衝突請求加入退避重試 / 排隊,讓搶輸者最終仍可訂到釋出的時段。
-- **CI pipeline**:GitHub Actions 自動跑測試 + 覆蓋率門檻,把目前手動的 `./mvnw verify` 自動化。
+- **Validation 補強**:加上公司營業時間(08:00–20:00)與單次預約時長上下限。
+- **JWT 強化**:加入 refresh token 與撤銷(黑名單)機制。
+- **稽核 / 報表**:Audit Log 記錄關鍵操作、匯出 CSV / Excel 報表。
 
 ## 11. Design Decisions
 

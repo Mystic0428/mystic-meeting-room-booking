@@ -476,7 +476,7 @@ ALTER TABLE reservations
 
 - **是否衝突:不算。** 可連續預約(back-to-back)。
 - **如何判斷**:`existing.start < new.end AND existing.end > new.start`(嚴格不等號),邊界相接(`end == start`)不重疊。
-- **如何測試**:repository test 放一筆 10–11 approved,查 11–12 → 不衝突;另查 10:30–11:30 → 衝突。
+- **如何驗證**:以 repository test 為例——放一筆 10–11 approved,驗證查 11–12 應**不衝突**(邊界相接),查 10:30–11:30 應**衝突**(部分重疊)。
 
 ### 情境 2:`cancel_requested` 是否佔用
 

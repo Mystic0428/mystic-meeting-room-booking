@@ -2,10 +2,15 @@ package com.mystic.booking.repository;
 
 import com.mystic.booking.entity.ReservationEntity;
 import com.mystic.booking.enums.ReservationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -13,6 +18,13 @@ import java.util.List;
 
 public interface ReservationRepository extends JpaRepository<ReservationEntity, Long>,
         JpaSpecificationExecutor<ReservationEntity> {
+
+    // 覆寫 JpaSpecificationExecutor.findAll,掛 @EntityGraph 讓 overview 一次 JOIN 撈 room/user,消除 N+1。
+    // @SuppressWarnings: 父介面所在套件為 @NonNullApi,此覆寫未延續 null 契約僅為 IDE inspection,與功能無關。
+    @Override
+    @EntityGraph(attributePaths = {"room", "user"})
+    @SuppressWarnings("NullableProblems")
+    Page<ReservationEntity> findAll(@Nullable Specification<ReservationEntity> spec, Pageable pageable);
 
     @Query("""
            SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END

@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-@Tag(name = "預約查詢 Query", description = "預約總覽、依條件查詢、每日/每月統計與報表匯出")
+@Tag(name = "預約 Reservation(查詢)", description = "預約總覽、依條件查詢、每日/每月統計與報表匯出")
 @RestController
 @RequiredArgsConstructor
 @Validated   // 啟用方法參數(@RequestParam / @PathVariable)的 Bean Validation

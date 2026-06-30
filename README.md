@@ -341,7 +341,7 @@ ALTER TABLE reservations
 | `users.email`、`rooms.name` | — | UNIQUE 約束 | btree(自動) |
 | `no_overlapping_reservation` | `room_id` + `tsrange(start_time, end_time)`,partial(佔用狀態) | V4 exclusion constraint | **GiST** |
 | `idx_reservations_room_id_start_time` | `(room_id, start_time)` | V8 | btree |
-| `idx_reservations_start_time` | `(start_time)` | V8 | btree |
+| `idx_reservations_start_time_status` | `(start_time, status)` | V10(取代 V8 單欄 `(start_time)`) | btree(涵蓋) |
 | `idx_reservations_user_id` | `(user_id)` | V8 | btree |
 
 > ⚠️ **PostgreSQL 不會自動為 foreign key 建 index**(只有 PK / UNIQUE 會自動建),因此 `room_id`、`user_id` 需在 V8 手動補上。
@@ -352,7 +352,7 @@ ALTER TABLE reservations
 |---|---|---|
 | GiST(V4) | 範圍重疊(`&&`)只能靠 GiST,btree 做不到 | `existsOverlapping`(衝突檢查) |
 | `(room_id, start_time)` | **等值欄位(`room_id`)在前、範圍/排序欄位(`start_time`)在後**——可同時過濾 room 並直接依 start_time 有序輸出,免額外排序 | `findByRoomIdWithDetails`、依會議室查預約 |
-| `(start_time)` | 只篩時間、不帶 room 的查詢無法用上面的複合索引(`start_time` 非前導欄位),故另建單欄 | `timeline`(某日)、`monthly-summary`、`top-used`、`overview` 的日期區間 |
+| `(start_time, status)` | 以 `start_time` 為前導服務日期區間查詢;再帶 `status` 後,`monthly-summary` 的「範圍 + `GROUP BY status`」可走 **Index Only Scan(Heap Fetches: 0,不回表)**——已用 `EXPLAIN ANALYZE` 驗證。最左前綴 `(start_time)` 仍服務只篩時間的查詢,故取代 V8 的單欄 `(start_time)` | `timeline`(某日)、`monthly-summary`、`top-used`、`overview` 的日期區間 |
 | `(user_id)` | FK 無自動索引,查某使用者的預約會全表掃 | 查某位 user 的所有預約 |
 
 ### ④ 資料量增加到 100 萬筆,會如何調整
@@ -360,11 +360,12 @@ ALTER TABLE reservations
 - **分區(partitioning)**:reservations 依 `start_time` 按**月份做 range partition**;查詢多帶月份範圍 → 觸發 **partition pruning** 只打單一子表,per-partition 的 btree / GiST index 更小更快;舊月份可 `DETACH` 封存。
 - **BRIN index**:時間序列資料的 `start_time` 與實體寫入順序高度相關,改用 **BRIN** 索引體積遠小於 btree、且對範圍查詢有效,適合超大且依時間遞增的表。
 - **讀寫分流**:查詢皆為 `@Transactional(readOnly = true)`,可路由到讀庫,主庫專責寫入。
-- **複合 / partial index 微調**:依實際慢查詢(`EXPLAIN ANALYZE`)再決定是否加 `(status, start_time)` 之類的複合索引,而非預先全建。
+- **複合 / partial index 依證據微調**:已用 `EXPLAIN ANALYZE`(~20 萬筆)實測——`(start_time, status)` 讓 monthly 走 Index Only Scan 故採用(V10);`(status, start_time)` 對單日 timeline 無效益故不建(見 ⑤)。後續仍應依實測慢查詢決定,而非預先全建。
 
 ### ⑤ 哪些欄位不適合盲目建 index
 
-- **`status`(單欄)**:只有 5 種值、且大多為 `approved`,**選擇性太低**,planner 通常會略過改走全表掃;單獨建只是徒增寫入成本與空間。需要時用**複合索引**(`status` 搭 `start_time`)或 **partial index**(`WHERE status = 'APPROVED'`)更划算。
+- **`status`(單欄)**:只有 5 種值、且大多為 `approved`,**選擇性太低**,planner 通常會略過改走全表掃;單獨建只是徒增寫入成本與空間。
+- **`(status, start_time)` 複合也刻意不建**:以 `EXPLAIN ANALYZE` 驗證,單日 `timeline`(`status = ? AND start_time` 落在某天)因日期範圍已夠窄,planner 仍選用 `(start_time, status)`、不採用 `(status, start_time)`(計畫顯示 `Rows Removed by Filter` 僅百餘列,過濾成本可忽略);僅在「`status` 過濾 + 大時間範圍 + 依 `start_time` 排序分頁」才可能划算,目前查詢無此形狀,故不預先建。需要時亦可考慮 **partial index**(`WHERE status = 'APPROVED'`)。
 - **通則**:每多一個 index,每次 INSERT / UPDATE 都要多維護一份 → **寫入變慢、空間變大**。低基數欄位、很少出現在 `WHERE` 的欄位、或已被既有複合索引前導涵蓋的欄位,都不該盲目加。
 
 ## 8. 如何執行測試
@@ -527,10 +528,10 @@ WHERE r.room.id = :roomId
 
 詳見第 7 節。摘要:
 
-- **建立**:`(room_id, start_time)`、`(start_time)`、`(user_id)`;衝突檢查由 V4 的 GiST exclusion index 服務。
+- **建立**:`(room_id, start_time)`、`(start_time, status)`(V10 涵蓋索引,取代單欄 `(start_time)`)、`(user_id)`;衝突檢查由 V4 的 GiST exclusion index 服務。
 - **100 萬筆時哪些 API 最可能變慢**:帶日期區間掃描的 timeline / monthly-summary / overview;以月份分區 + 適當 index 緩解。
-- **如何用 `EXPLAIN ANALYZE` 檢查**:看查詢是否走 index(Index Scan vs Seq Scan)、估算列數與實際耗時是否吻合。
-- **哪些欄位不宜盲建**:`status` 單欄(只有 5 種值、選擇性低,planner 多半略過)。
+- **如何用 `EXPLAIN ANALYZE` 檢查**:看走 index 與否(Index Scan / **Index Only Scan** / Seq Scan)、`Heap Fetches`(是否回表)、`Rows Removed by Filter`(索引貼合度)、估算列數與實際是否吻合。實測(~20 萬筆):monthly 在 `(start_time, status)` 下走 **Index Only Scan、Heap Fetches: 0**。
+- **哪些欄位不宜盲建**:`status` 單欄(5 種值、選擇性低,planner 多半略過);`(status, start_time)` 經實測對單日 timeline 無效益亦不建。
 
 ### Group By 查詢(monthly summary)
 

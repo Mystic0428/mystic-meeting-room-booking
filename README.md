@@ -499,6 +499,10 @@ ALTER TABLE reservations
 
 - **新預約審核與退訂審核共用 `POST /api/reservations/{id}/review`**,依預約當下狀態分派:`processing` → 審新訂單(approve→approved / reject→rejected);`cancel_requested` → 審退訂(approve→cancelled / reject→退回 approved);其他狀態回 409。
 - **身分驗證機制**:題目未要求登入(JWT 屬加分項)。**已於加分項實作**:`cancel-request` / `review` 的操作者身分改由 **JWT / `SecurityContext`** 取得(退回比對是否本人、審核需 `REVIEWER`/`ADMIN`),不再信任 request body。(`create` 仍保留 body `userId` 表示「為誰預約」,屬刻意取捨。)
+- **端點授權(RBAC)取捨**:依規格角色表逐端點綁定,並區分「明文指派」與「模糊地帶」:
+  - **明文照做**:會議室管理(`POST/PUT/DELETE /api/rooms`)→ `ADMIN`;審核(`/review`)→ `REVIEWER`/`ADMIN`;**匯出報表(`/export`)→ `ADMIN`**(角色表僅 ADMIN 列有「匯出報表」)。
+  - **建立使用者(`POST /api/users`)**:規格未指派角色,且 ADMIN 能力清單未含此項,故**開放給已登入者**。已知風險:`UserRequest` 可指定 `role`,理論上可建立 ADMIN 帳號;正式環境應改為 ADMIN 管理,或拆出強制 `role=USER` 的自助註冊端點。
+  - **月統計 / 使用率(`monthly-summary` / `top-used`)**:規格未明指角色,屬全域統計;**假設審核者需統計輔助判斷,故開放 `REVIEWER`/`ADMIN`**。一般 `USER` 僅能查看自己的預約,故擋下(403)。
 
 ## 13. Database Reasoning(資料庫設計理由)
 
